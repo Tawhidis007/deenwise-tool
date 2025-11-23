@@ -48,7 +48,7 @@ def from_bdt(amount_bdt: float) -> float:
 # Page Setup
 # ============================================
 st.set_page_config(page_title="Forecast Dashboard", page_icon="📊", layout="wide")
-st.title("📊 Forecast Dashboard (Module 2)")
+st.title("Forecast Dashboard (Module 2)")
 st.caption("Plan campaign quantities by product, distribute across months, and see full revenue forecast — persistent via Supabase.")
 
 # -----------------------------

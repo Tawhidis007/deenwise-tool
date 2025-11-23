@@ -11,7 +11,7 @@ from modules.products import (
 
 st.set_page_config(page_title="Product Management", page_icon="🧵", layout="wide")
 
-st.title("🧵 Product Management (Module 1)")
+st.title("Product Management (Module 1)")
 st.caption("Add, edit, and remove DeenWise products. All unit costs and margins update live. Products are persisted in Supabase.")
 
 # =====================================================

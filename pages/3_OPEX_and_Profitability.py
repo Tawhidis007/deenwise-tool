@@ -48,7 +48,7 @@ def from_bdt(amount_bdt: float) -> float:
 # Page Setup
 # ============================================
 st.set_page_config(page_title="OPEX & Profitability", page_icon="🧾", layout="wide")
-st.title("🧾 OPEX & Profitability (Module 3)")
+st.title("OPEX & Profitability (Module 3)")
 st.caption("Add Operating Expenses (OPEX), attach them to campaigns, and see net profitability after overheads.")
 
 

@@ -1,15 +1,13 @@
-# Home (app.py)
-
+# Home.py — Premium Black & Gold Responsive Version
 import streamlit as st
 
 # =========================================================
-# Global Defaults
+# Global Defaults (kept exactly same as your original)
 # =========================================================
 if "currency" not in st.session_state:
     st.session_state.currency = "BDT"
 
 if "exchange_rates" not in st.session_state:
-    # Bangladesh Bank approx as placeholder
     st.session_state.exchange_rates = {
         "BDT": 1.0,
         "USD": 117.0,
@@ -18,22 +16,81 @@ if "exchange_rates" not in st.session_state:
 
 CURRENCY_SYMBOLS = {"BDT": "৳", "USD": "$", "GBP": "£"}
 
-
 # =========================================================
-# Page Settings
+# Page Config
 # =========================================================
 st.set_page_config(
-    page_title="DeenWise Dashboard",
-    page_icon="🏠",
+    page_title="DeenWise Financial Planning Tool",
+    page_icon="☪︎",
     layout="wide",
 )
 
+# =========================================================
+# Custom CSS — Premium Black/Gold UI + Mobile Responsive Cards
+# =========================================================
+st.markdown("""
+<style>
+    /* Global */
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif !important;
+        color: #f2f2f2;
+        background: #0d0d0d;
+    }
+
+    /* Hide top Streamlit default header */
+    header {visibility: hidden;}
+
+    /* Hero section spacing */
+    .hero {
+        padding: 0.5rem 0 1.2rem 0;
+    }
+
+    /* Cards container */
+    .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 36px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+
+    /* Card styling */
+    .card {
+        background: #141414;
+        border-radius: 14px;
+        padding: 22px;
+        border: 1px solid #232323;
+        transition: all 0.25s ease;
+        height: 100%;
+    }
+
+    .card:hover {
+        border-color: #f5d67b;
+        background: #1b1b1b;
+        transform: translateY(-4px);
+    }
+
+    .card h3 {
+        color: #f5d67b;
+        margin-bottom: 10px;
+        font-size: 1.3rem;
+    }
+
+</style>
+""", unsafe_allow_html=True)
+
 
 # =========================================================
-# Hero Section
+# HERO SECTION
 # =========================================================
-st.title("🏠 DeenWise Business Dashboard")
-st.caption("A single workspace for planning, forecasting, and business decision-making.")
+st.markdown("""
+<div class='hero'>
+    <h1 style='color:#f5d67b;'> ☪︎ DeenWise Financial Planning Tool</h1>
+    <p style='font-size:1.05rem; color:#d6d6d6;'>
+        A single workspace for planning, forecasting, and business decision-making.
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -55,162 +112,107 @@ Everything updates automatically and stays consistent across modules.
 
 st.markdown("---")
 
-
 # =========================================================
-# Quick Navigation (Side navbar alternatives)
+# MAIN — MODULE CARDS (Black & Gold)
 # =========================================================
-st.subheader("📂 Navigate to a Module")
 
-col1, col2, col3, col4, col5 = st.columns(5)
-
-with col1:
-    st.page_link(
-        "pages/1_Product_Management.py",
-        label="Product Management",
-        icon="🧵",
-        help="Build and maintain the master product database."
-    )
-
-with col2:
-    st.page_link(
-        "pages/2_Forecast_Dashboard.py",
-        label="Forecast Dashboard",
-        icon="📊",
-        disabled=True,
-        help="Plan campaign quantities & revenue (enabled after Module 1)."
-    )
-
-with col3:
-    st.page_link(
-        "pages/3_OPEX_and_Profitability.py",
-        label="OPEX & Profitability",
-        icon="🧾",
-        disabled=True,
-        help="View your profit after overheads (enabled after Module 2)."
-    )
-
-with col4:
-    st.page_link(
-        "pages/4_Scenario_Planning.py",
-        label="Scenario Planning",
-        icon="🧪",
-        disabled=True,
-        help="Test 'What-If' changes without touching real data."
-    )
-
-with col5:
-    st.page_link(
-        "pages/5_Settings.py",
-        label="Settings",
-        icon="⚙️",
-        help="Currency, defaults, and system configuration."
-    )
-
-st.markdown("---")
-
-
-# =========================================================
-# What Each Module Does (Updated & Cleaner)
-# =========================================================
 st.subheader("📘 Overview of All Modules")
 
+st.markdown("<div class='card-grid'>", unsafe_allow_html=True)
+
+# ---------------- Card 1 ----------------
 st.markdown("""
-### 🧵 Module 1 — Product Management  
-The foundation of the entire system.  
-Here you set up every product with:
+<div class='card'>
+    <h3> Module 1 — Product Management</h3>
+    <p>
+        The foundation of the entire system.<br><br>
+        Define products with:<br>
+        • Manufacturing, packaging & shipping costs<br>
+        • Marketing cost<br>
+        • Expected return rate<br>
+        • Discount strategy<br>
+        • Final selling price<br><br>
+        These values automatically flow into every other module.
+    </p>
+</div>
+""", unsafe_allow_html=True)
+st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
+# ---------------- Card 2 ----------------
+st.markdown("""
+<div class='card'>
+    <h3> Module 2 — Forecast Dashboard</h3>
+    <p>
+        Plan campaign quantities, revenue, and monthly distribution.<br><br>
+        Features:<br>
+        • Choose campaign products<br>
+        • Set quantities<br>
+        • Custom month distribution<br>
+        • Optional size breakdowns<br>
+        • Revenue & cost forecasts<br>
+        • Profit contribution charts<br><br>
+        <b>Answers:</b> “If we run this campaign, how much will we make?”
+    </p>
+</div>
+""", unsafe_allow_html=True)
+st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
+# ---------------- Card 3 ----------------
+st.markdown("""
+<div class='card'>
+    <h3> Module 3 — OPEX & Profitability</h3>
+    <p>
+        Add real overhead costs and see true profit after expenses.<br><br>
+        Includes:<br>
+        • Salaries<br>
+        • Rent & utilities<br>
+        • Studio expenses<br>
+        • Marketing overhead<br>
+        • One-time or seasonal costs<br><br>
+        <b>Answers:</b> “After all costs — what is our true profit?”
+    </p>
+</div>
+""", unsafe_allow_html=True)
+st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
+# ---------------- Card 4 ----------------
+st.markdown("""
+<div class='card'>
+    <h3> Module 4 — Scenario Planning</h3>
+    <p>
+        A safe sandbox to test ideas.<br><br>
+        Adjust:<br>
+        • Prices, costs, discounts<br>
+        • Quantities<br>
+        • Return rates<br>
+        • FX rates<br>
+        • Overheads<br><br>
+        Compare scenarios instantly — without touching real data.
+    </p>
+</div>
+""", unsafe_allow_html=True)
+st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
+# ---------------- Card 5 ----------------
+st.markdown("""
+<div class='card'>
+    <h3> Settings</h3>
+    <p>
+        Global configuration for the entire system.<br><br>
+        Control:<br>
+        • Currency display<br>
+        • Exchange rates<br>
+        • VAT & default assumptions<br>
+        • Knowledge base (coming soon)<br><br>
+        Settings apply instantly across all modules.
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
-- Manufacturing, packaging & shipping costs  
-- Marketing cost  
-- Expected return rate  
-- Discount strategy  
-- Final selling price  
-
-These values automatically flow into every other module.
-
----
-
-### 📊 Module 2 — Forecast Dashboard  
-Plan your campaigns with confidence.
-
-You can:
-
-- Select campaign products  
-- Set quantities  
-- Distribute sales by month  
-- Add size breakdowns (optional)  
-- View full revenue & cost forecasts  
-- Understand profit contribution per product and per month  
-
-This module answers:  
-**“If we run this campaign, how much will we make?”**
-
----
-
-### 🧾 Module 3 — OPEX & Profitability  
-Real overhead costs often change the final picture.
-
-Here you can manage:
-
-- Salaries  
-- Rent  
-- Utilities  
-- Studio expenses  
-- Marketing overhead  
-- One-time or seasonal costs  
-
-Then see:
-
-- Net profit **after** overhead  
-- Profit per unit  
-- Monthly financial breakdown  
-- Burn rate  
-- Contribution margin  
-
-This module answers:  
-**“After all costs — what is our true profit?”**
-
----
-
-### 🧪 Module 4 — Scenario Planning  
-A safe sandbox for experimentation.
-
-You can adjust:
-
-- Prices  
-- Quantity  
-- Costs  
-- Discounts  
-- Return rates  
-- USD/GBP exchange rate  
-- Overheads  
-
-Then compare scenarios instantly.  
-Nothing here modifies your real campaign or product data.
-
-This module answers:  
-**“What if we change something — how does profit react?”**
-
----
-
-### ⚙️ Module 5 — Settings  
-Global configuration for the entire app:
-
-- Currency  
-- Exchange rates  
-- Future VAT / default assumptions  
-- Internal knowledge base (coming soon)  
-
-Settings apply instantly across all modules.
-
----
-""")
-
+st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================
-# Tips for Using the Tool
+# Tips Section
 # =========================================================
+
+st.markdown("---")
 st.subheader("💡 Helpful Tips")
-
 st.markdown("""
 - Always begin with **Module 1** — other modules rely on product data  
 - Use realistic return rates and discounts  
@@ -220,7 +222,6 @@ st.markdown("""
 - Nothing breaks — feel free to experiment  
 
 ---
-
 ### Ready to get started?  
-Begin with **🧵 Product Management**.
+Begin with **Product Management**.
 """)

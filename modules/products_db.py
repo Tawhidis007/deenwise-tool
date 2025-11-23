@@ -56,3 +56,14 @@ def db_update_product(product_id: str, updated_data: Dict[str, Any]) -> Dict[str
 def db_delete_product(product_id: str) -> None:
     supabase = get_supabase()
     supabase.table("products").delete().eq("id", product_id).execute()
+
+# -------------------------------------------
+# Public-friendly alias (for reporting module)
+# -------------------------------------------
+
+def get_all_products() -> List[Dict[str, Any]]:
+    """
+    Wrapper so other modules (like Reporting) can access products
+    using a clean function name.
+    """
+    return db_fetch_products()

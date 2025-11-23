@@ -181,3 +181,40 @@ def save_size_breakdown(campaign_id: str, size_breakdown: Dict[str, Dict[str, fl
 
     if payload:
         supabase.table("campaign_size_breakdown").insert(payload).execute()
+
+# ============================================================
+# Reporting Helpers (Module 6)
+# ============================================================
+
+def get_all_campaigns() -> List[Dict[str, Any]]:
+    """
+    Wrapper to fetch all campaigns in the system.
+    Used by the Reporting & Export module.
+    """
+    return fetch_campaigns()
+
+
+def get_campaign_full_data(campaign_id: str) -> Dict[str, Any]:
+    """
+    Return a combined dataset for reporting:
+    - campaign info
+    - quantities
+    - month weights
+    - size breakdown
+    """
+    meta = [c for c in fetch_campaigns() if c["id"] == campaign_id]
+    if not meta:
+        return {}
+
+    meta = meta[0]
+
+    quantities, cp_row_ids = fetch_campaign_products(campaign_id)
+    month_weights = fetch_month_weights(campaign_id)
+    size_breakdown = fetch_size_breakdown(campaign_id)
+
+    return {
+        "campaign": meta,
+        "quantities": quantities,
+        "month_weights": month_weights,
+        "size_breakdown": size_breakdown
+    }

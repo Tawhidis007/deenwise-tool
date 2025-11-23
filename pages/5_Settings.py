@@ -26,7 +26,7 @@ def currency_symbol():
 # =====================================================
 st.set_page_config(page_title="Settings", page_icon="⚙️", layout="wide")
 
-st.title("⚙️ Settings & Global Assumptions")
+st.title("Settings & Global Assumptions")
 st.caption("Adjust currency display and exchange rates. More settings will come as the app expands.")
 
 

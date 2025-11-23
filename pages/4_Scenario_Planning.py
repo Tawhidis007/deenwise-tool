@@ -43,7 +43,7 @@ sym = currency_symbol()
 # Page setup
 # ============================================
 st.set_page_config(page_title="Scenario Planning", page_icon="🧪", layout="wide")
-st.title("🧪 Scenario Planning (Module 4)")
+st.title("Scenario Planning (Module 4)")
 st.caption("Create 'What-If' scenarios without touching real product or campaign data. Compare outcomes side-by-side.")
 
 # ============================================
