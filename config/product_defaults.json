@@ -1,0 +1,30 @@
+[
+  {
+    "id": "TSHIRT-001",
+    "name": "Classic T-Shirt",
+    "category": "Tops",
+    "price": 20.0,
+    "manufacturing_cost": 8.0,
+    "packaging_cost": 1.0,
+    "shipping_cost": 2.0,
+    "marketing_cost": 1.5,
+    "return_rate": 0.05,
+    "discount_rate": 0.1,
+    "vat_included": true,
+    "notes": "Core staple tee"
+  },
+  {
+    "id": "HOODIE-001",
+    "name": "Essential Hoodie",
+    "category": "Outerwear",
+    "price": 45.0,
+    "manufacturing_cost": 25.0,
+    "packaging_cost": 1.5,
+    "shipping_cost": 3.0,
+    "marketing_cost": 2.0,
+    "return_rate": 0.03,
+    "discount_rate": 0.05,
+    "vat_included": true,
+    "notes": "Winter hero product"
+  }
+]
