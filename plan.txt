@@ -1,0 +1,34 @@
+deenwise-forecast/
+│
+├─ app.py                          # Streamlit entrypoint (or pages/)
+├─ requirements.txt
+├─ README.md
+│
+├─ config/
+│   ├─ product_defaults.json        # default products + cost assumptions
+│   ├─ expense_defaults.json        # default fixed expenses
+│   ├─ assumptions.json             # tax/VAT/returns/shipping etc.
+│
+├─ data/
+│   ├─ products.csv                 # editable product list (optional)
+│   ├─ historical_sales.csv         # for future ML forecasting (optional)
+│
+├─ modules/
+│   ├─ products.py                  # product input & validation
+│   ├─ revenue.py                   # revenue forecast logic
+│   ├─ expenses.py                  # expense forecast logic
+│   ├─ profit_cashflow.py           # profit, cashflow, break-even
+│   ├─ scenarios.py                 # scenario save/compare engine
+│   ├─ insights.py                  # auto insights generation
+│   ├─ plots.py                     # all Plotly charts
+│   ├─ exports.py                   # PDF/Excel export
+│   └─ utils.py                     # shared helpers
+│
+├─ pages/                           # optional multipage Streamlit
+│   ├─ 1_Forecast_Dashboard.py
+│   ├─ 2_Scenarios.py
+│   └─ 3_Settings.py
+│
+└─ outputs/
+    ├─ exports/                     # generated PDFs/Excels
+    └─ saved_scenarios.json
