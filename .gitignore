@@ -1,0 +1,66 @@
+# --------------------------------------
+# Python
+# --------------------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.so
+
+# Virtual environments
+venv/
+.env/
+.venv/
+env/
+*venv*/
+
+# Pipenv
+Pipfile.lock
+
+# Poetry
+poetry.lock
+
+# Build / distribution
+build/
+dist/
+develop-eggs/
+.eggs/
+*.egg-info/
+*.egg
+
+# Byte-compiled / cache
+.cache/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Logs
+*.log
+logs/
+*.out
+
+# SQLite (if used)
+*.db
+
+# --------------------------------------
+# Editors and IDEs
+# --------------------------------------
+
+# VS Code
+.vscode/
+.code-workspace
+
+# PyCharm
+.idea/
+
+# --------------------------------------
+# Operating System
+# --------------------------------------
+.DS_Store
+Thumbs.db
+
+# --------------------------------------
+# Environment Files
+# --------------------------------------
+*.env
+*.env.*
