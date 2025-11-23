@@ -64,4 +64,7 @@ Thumbs.db
 # --------------------------------------
 *.env
 *.env.*
-.streamlit/secrets.toml
+# Ignore everything in .streamlit except config files
+.streamlit/*
+!.streamlit/config.toml
+!.streamlit/*.json
