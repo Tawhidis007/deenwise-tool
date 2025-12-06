@@ -94,20 +94,29 @@ def _fetch_campaign_opex_items(campaign_id: str) -> List[Dict[str, Any]]:
         "campaign_opex"
     ]
 
+    normalized: List[Dict[str, Any]] = []
+
     for t in possible_tables:
         try:
             resp = (
                 supabase.table(t)
-                .select("opex_item_id")
+                .select("*")
                 .eq("campaign_id", campaign_id)
                 .execute()
             )
-            if resp.data is not None:
-                return resp.data
         except Exception:
             continue
 
-    return []
+        rows = resp.data or []
+        for r in rows:
+            oid = r.get("opex_item_id") or r.get("opex_id")
+            if oid:
+                normalized.append({"opex_item_id": oid})
+
+        if normalized:
+            return normalized
+
+    return normalized
 
 
 def _fetch_opex_library_by_ids(ids: List[str]) -> List[Dict[str, Any]]:

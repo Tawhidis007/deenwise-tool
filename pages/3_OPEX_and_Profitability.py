@@ -14,17 +14,15 @@ from modules.campaign_db import (
     fetch_size_breakdown,
     fetch_product_month_weights,
 )
-
 from modules.opex_db import (
     fetch_opex_items,
     insert_opex_item,
     update_opex_item,
     delete_opex_item,
     fetch_campaign_opex_links,
-    save_campaign_opex_links
+    save_campaign_opex_links,
 )
 from modules.opex import rows_to_opex_items, expand_opex_for_campaign, opex_month_table
-
 
 # ============================================
 # Currency helpers (DISPLAY ONLY)
@@ -37,8 +35,10 @@ if "exchange_rates" not in st.session_state:
 
 CURRENCY_SYMBOLS = {"BDT": "৳", "USD": "$", "GBP": "£"}
 
+
 def currency_symbol():
     return CURRENCY_SYMBOLS.get(st.session_state.currency, "৳")
+
 
 def from_bdt(amount_bdt: float) -> float:
     rate = st.session_state.exchange_rates.get(st.session_state.currency, 1.0)
@@ -46,12 +46,102 @@ def from_bdt(amount_bdt: float) -> float:
 
 
 # ============================================
-# Page Setup
+# Page Setup + Styling
 # ============================================
-st.set_page_config(page_title="OPEX & Profitability", page_icon="🧾", layout="wide")
-st.title("OPEX & Profitability (Module 3)")
-st.caption("Add Operating Expenses (OPEX), attach them to campaigns, and see net profitability after overheads.")
+st.set_page_config(page_title="OPEX & Profitability", page_icon="🏢", layout="wide")
+st.markdown(
+    """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;600&display=swap');
+:root {
+    --bg: #0b0c10;
+    --panel: #0f1119;
+    --border: #1f2533;
+    --text: #e8ecf3;
+    --muted: #9ea5b4;
+    --accent: #3dd598;
+    --accent-2: #7dd3fc;
+}
+html, body, [class*="css"] {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk','Inter',system-ui,-apple-system,sans-serif;
+}
+.main { background: var(--bg); }
+h1, h2, h3, h4 { color: var(--text); letter-spacing: -0.3px; font-weight: 700; }
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+}
+.pill {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(61,213,152,0.12);
+    border: 1px solid rgba(61,213,152,0.25);
+    color: var(--accent);
+    font-size: 12px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+.stDataFrame {
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--panel);
+}
+thead tr th {
+    background: #141923 !important;
+    color: var(--text) !important;
+    font-weight: 600 !important;
+}
+tbody tr td { color: var(--muted) !important; }
+.js-plotly-plot .plotly-title,
+.js-plotly-plot .legend text,
+.js-plotly-plot .xtick text,
+.js-plotly-plot .ytick text { fill: var(--text) !important; }
+.hero {
+    background: radial-gradient(circle at 18% 22%, rgba(61,213,152,0.12), transparent 30%),
+                radial-gradient(circle at 85% 10%, rgba(125,211,252,0.16), transparent 26%),
+                linear-gradient(120deg, #0b0c10 0%, #0e1119 70%, #0b0c10 100%);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 26px 24px;
+    box-shadow: 0 18px 60px rgba(0,0,0,0.45);
+    margin-bottom: 16px;
+}
+.hero h2 { margin: 0; font-size: 28px; letter-spacing: -0.35px; }
+.hero p { margin-top: 10px; color: var(--muted); line-height: 1.6; }
+.tab-container [role="tablist"] button {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px 12px 0 0;
+    color: var(--text);
+}
+.tab-container [role="tablist"] button[aria-selected="true"] {
+    border-bottom: 2px solid var(--accent);
+    color: var(--accent);
+}
+</style>
+""",
+    unsafe_allow_html=True,
+)
 
+st.markdown(
+    """
+<div class="hero">
+    <span class="pill">OPEX</span>
+    <h2>OPEX & Profitability</h2>
+    <p>Add operating expenses, attach them to campaigns, and see net profit after overheads.</p>
+</div>
+""",
+    unsafe_allow_html=True,
+)
+
+chart_bg = "#0f1119"
+palette = ["#4BA3FF", "#2EE6D6", "#1F8BAE", "#7C5CFF", "#FF6B6B", "#FFC857"]
+sym = currency_symbol()
 
 # ============================================
 # Campaign selection (same pattern as Module 2)
@@ -63,11 +153,11 @@ campaign_name_map = {c["name"]: c["id"] for c in campaigns} if campaigns else {a
 campaign_names = list(campaign_name_map.keys())
 
 with st.sidebar:
-    st.header("📌 Active Campaign")
+    st.header("Active Campaign")
     selected_campaign_name = st.selectbox(
         "Select campaign",
         options=campaign_names,
-        index=campaign_names.index(active_campaign["name"]) if active_campaign["name"] in campaign_names else 0
+        index=campaign_names.index(active_campaign["name"]) if active_campaign["name"] in campaign_names else 0,
     )
     selected_campaign_id = campaign_name_map[selected_campaign_name]
 
@@ -79,7 +169,6 @@ distribution_mode = curr_campaign.get("distribution_mode", "Uniform")
 months = month_range(start_date, end_date)
 
 st.divider()
-
 
 # ============================================
 # Load campaign inputs
@@ -102,9 +191,8 @@ monthly_df_bdt, product_summary_df_bdt, size_df_bdt = build_campaign_forecast(
     distribution_mode=distribution_mode,
     custom_month_weights=None,  # legacy values disabled
     per_product_month_weights=db_product_weights if distribution_mode == "Custom" else None,
-    size_breakdown=db_sizes if db_sizes else None
+    size_breakdown=db_sizes if db_sizes else None,
 )
-
 
 revenue_month_table = (
     monthly_df_bdt.groupby(["month", "month_nice"], as_index=False)
@@ -136,32 +224,33 @@ opex_mt_bdt = opex_month_table(opex_df_bdt)
 full_mt = revenue_month_table.merge(
     opex_mt_bdt,
     on=["month", "month_nice"],
-    how="left"
+    how="left",
 ).fillna({"opex_cost_bdt": 0})
 
-full_mt["net_profit_after_opex_bdt"] = (
-    full_mt["net_profit_variable_bdt"] - full_mt["opex_cost_bdt"]
-)
+full_mt["net_profit_after_opex_bdt"] = full_mt["net_profit_variable_bdt"] - full_mt["opex_cost_bdt"]
 
 # Convert for display
-sym = currency_symbol()
 full_mt_disp = full_mt.copy()
 for c in [
-    "gross_revenue_bdt","effective_revenue_bdt","variable_cost_bdt",
-    "net_profit_variable_bdt","opex_cost_bdt","net_profit_after_opex_bdt"
+    "gross_revenue_bdt",
+    "effective_revenue_bdt",
+    "variable_cost_bdt",
+    "net_profit_variable_bdt",
+    "opex_cost_bdt",
+    "net_profit_after_opex_bdt",
 ]:
-    full_mt_disp[c.replace("_bdt","")] = full_mt_disp[c].apply(from_bdt)
+    full_mt_disp[c.replace("_bdt", "")] = full_mt_disp[c].apply(from_bdt)
 
 # headline totals
 total_opex_bdt = float(full_mt["opex_cost_bdt"].sum())
 net_after_opex_bdt = float(full_mt["net_profit_after_opex_bdt"].sum())
 
-
 # ============================================
 # Tabs
 # ============================================
-tab1, tab2, tab3 = st.tabs(["🏷 OPEX Items", "🧩 Attach to Campaign", "📈 Profitability View"])
-
+st.markdown('<div class="tab-container">', unsafe_allow_html=True)
+tab1, tab2, tab3 = st.tabs(["OPEX Items", "Attach to Campaign", "Profitability View"])
+st.markdown("</div>", unsafe_allow_html=True)
 
 # -------------------------------------------------------------------
 # TAB 1 — Manage global OPEX items
@@ -174,13 +263,13 @@ with tab1:
         df_opex = pd.DataFrame(opex_rows)
         df_disp = df_opex.copy()
         df_disp["cost"] = df_disp["cost_bdt"].apply(from_bdt)
-        df_disp = df_disp[["name","category","cost","start_month","end_month","is_one_time","notes"]]
+        df_disp = df_disp[["name", "category", "cost", "start_month", "end_month", "is_one_time", "notes"]]
         st.dataframe(df_disp, use_container_width=True, hide_index=True)
     else:
         st.info("No OPEX items yet. Add your first one below.")
 
     st.divider()
-    st.markdown("### ➕ Add New OPEX Item")
+    st.markdown("### Add New OPEX Item")
 
     with st.form("add_opex_form", clear_on_submit=True):
         colA, colB, colC = st.columns(3)
@@ -208,18 +297,18 @@ with tab1:
                 "start_month": start_month.strip(),
                 "end_month": end_month.strip() or None,
                 "is_one_time": bool(is_one_time),
-                "notes": notes.strip()
+                "notes": notes.strip(),
             }
 
             if not payload["name"] or not payload["category"] or not payload["start_month"]:
                 st.error("Please fill the required fields.")
             else:
                 insert_opex_item(payload)
-                st.success("OPEX item added ✅")
+                st.success("OPEX item added.")
                 st.rerun()
 
     st.divider()
-    st.markdown("### ✏️ Edit / Delete OPEX Item")
+    st.markdown("### Edit / Delete OPEX Item")
 
     if opex_rows:
         name_map = {r["name"]: r for r in opex_rows}
@@ -232,14 +321,14 @@ with tab1:
             with colA:
                 e_name = st.text_input("name*", value=sel_row["name"])
                 e_cat = st.text_input("category*", value=sel_row["category"])
-                e_notes = st.text_area("notes", value=sel_row.get("notes",""))
+                e_notes = st.text_area("notes", value=sel_row.get("notes", ""))
 
             with colB:
                 e_cost_disp = st.number_input(
                     f"cost ({sym})*",
                     min_value=0.0,
                     value=from_bdt(sel_row["cost_bdt"]),
-                    step=100.0
+                    step=100.0,
                 )
 
             with colC:
@@ -247,28 +336,30 @@ with tab1:
                 e_end = st.text_input("end_month", value=sel_row.get("end_month") or "")
                 e_one_time = st.toggle("one_time?", value=bool(sel_row.get("is_one_time", False)))
 
-            csave, cdel = st.columns([1,1])
+            csave, cdel = st.columns([1, 1])
             save_btn = csave.form_submit_button("Save changes")
             del_btn = cdel.form_submit_button("Delete item")
 
             if save_btn:
-                update_opex_item(sel_row["id"], {
-                    "name": e_name.strip(),
-                    "category": e_cat.strip(),
-                    "cost_bdt": float(e_cost_disp) * st.session_state.exchange_rates[st.session_state.currency],
-                    "start_month": e_start.strip(),
-                    "end_month": e_end.strip() or None,
-                    "is_one_time": bool(e_one_time),
-                    "notes": e_notes.strip()
-                })
-                st.success("Updated ✅")
+                update_opex_item(
+                    sel_row["id"],
+                    {
+                        "name": e_name.strip(),
+                        "category": e_cat.strip(),
+                        "cost_bdt": float(e_cost_disp) * st.session_state.exchange_rates[st.session_state.currency],
+                        "start_month": e_start.strip(),
+                        "end_month": e_end.strip() or None,
+                        "is_one_time": bool(e_one_time),
+                        "notes": e_notes.strip(),
+                    },
+                )
+                st.success("Updated.")
                 st.rerun()
 
             if del_btn:
                 delete_opex_item(sel_row["id"])
                 st.warning("Deleted item.")
                 st.rerun()
-
 
 # -------------------------------------------------------------------
 # TAB 2 — Attach OPEX to campaign
@@ -281,28 +372,27 @@ with tab2:
         st.info("No OPEX items exist yet. Create them in the previous tab.")
         st.stop()
 
-    options = {f"{o.name} • {o.category}": o.id for o in opex_items}
-    default_sel = [k for k,v in options.items() if v in linked_opex_ids]
+    options = {f"{o.name} · {o.category}": o.id for o in opex_items}
+    default_sel = [k for k, v in options.items() if v in linked_opex_ids]
 
     selected_labels = st.multiselect(
         "OPEX included in this campaign",
         options=list(options.keys()),
-        default=default_sel
+        default=default_sel,
     )
     selected_ids = [options[lbl] for lbl in selected_labels]
 
     save_campaign_opex_links(selected_campaign_id, selected_ids)
-    st.success("Campaign OPEX selection saved ✅")
+    st.success("Campaign OPEX selection saved.")
 
     st.divider()
     st.markdown("### What this means")
     st.write(
         """
-- Items you select here will be counted **every time this campaign loads**.
+- Items you select here will be counted every time this campaign loads.
 - If you later edit an OPEX item's value, every campaign using it updates automatically.
         """
     )
-
 
 # -------------------------------------------------------------------
 # TAB 3 — Profitability view (Revenue + Variable Cost + OPEX)
@@ -322,10 +412,14 @@ with tab3:
 
     st.markdown("### Monthly Financial Table")
     show_cols = [
-        "month_nice","qty",
-        "gross_revenue","effective_revenue",
-        "variable_cost","net_profit_variable",
-        "opex_cost","net_profit_after_opex"
+        "month_nice",
+        "qty",
+        "gross_revenue",
+        "effective_revenue",
+        "variable_cost",
+        "net_profit_variable",
+        "opex_cost",
+        "net_profit_after_opex",
     ]
     st.dataframe(full_mt_disp[show_cols], use_container_width=True, hide_index=True)
 
@@ -340,9 +434,10 @@ with tab3:
             x="month_nice",
             y="effective_revenue",
             markers=True,
-            title=f"Effective Revenue Over Campaign ({sym})"
+            title=f"Effective Revenue Over Campaign ({sym})",
+            color_discrete_sequence=palette,
         )
-        fig1.update_layout(height=380, yaxis_title=sym, xaxis_title="")
+        fig1.update_layout(height=380, yaxis_title=sym, xaxis_title="", plot_bgcolor=chart_bg, paper_bgcolor=chart_bg, font_color="#e6edf3")
         st.plotly_chart(fig1, use_container_width=True)
 
         fig2 = px.line(
@@ -350,9 +445,10 @@ with tab3:
             x="month_nice",
             y="opex_cost",
             markers=True,
-            title=f"OPEX Over Campaign ({sym})"
+            title=f"OPEX Over Campaign ({sym})",
+            color_discrete_sequence=palette,
         )
-        fig2.update_layout(height=380, yaxis_title=sym, xaxis_title="")
+        fig2.update_layout(height=380, yaxis_title=sym, xaxis_title="", plot_bgcolor=chart_bg, paper_bgcolor=chart_bg, font_color="#e6edf3")
         st.plotly_chart(fig2, use_container_width=True)
 
     with colB:
@@ -360,37 +456,37 @@ with tab3:
             full_mt_disp,
             x="month_nice",
             y="net_profit_after_opex",
-            title=f"Net Profit After OPEX ({sym})"
+            title=f"Net Profit After OPEX ({sym})",
+            color_discrete_sequence=palette,
         )
-        fig3.update_layout(height=380, yaxis_title=sym, xaxis_title="")
+        fig3.update_layout(height=380, yaxis_title=sym, xaxis_title="", plot_bgcolor=chart_bg, paper_bgcolor=chart_bg, font_color="#e6edf3")
         st.plotly_chart(fig3, use_container_width=True)
 
         fig4 = px.bar(
             full_mt_disp,
             x="month_nice",
-            y=["effective_revenue","variable_cost","opex_cost"],
+            y=["effective_revenue", "variable_cost", "opex_cost"],
             barmode="group",
-            title=f"Revenue vs Variable Cost vs OPEX ({sym})"
+            title=f"Revenue vs Variable Cost vs OPEX ({sym})",
+            color_discrete_sequence=palette,
         )
-        fig4.update_layout(height=380, yaxis_title=sym, xaxis_title="")
+        fig4.update_layout(height=380, yaxis_title=sym, xaxis_title="", plot_bgcolor=chart_bg, paper_bgcolor=chart_bg, font_color="#e6edf3")
         st.plotly_chart(fig4, use_container_width=True)
 
     st.divider()
     st.markdown("### OPEX Breakdown by Category")
     if not opex_df_bdt.empty:
-        cat_df = (
-            opex_df_bdt.groupby("category", as_index=False)
-            .agg(cost_bdt=("cost_bdt","sum"))
-        )
+        cat_df = opex_df_bdt.groupby("category", as_index=False).agg(cost_bdt=("cost_bdt", "sum"))
         cat_df["cost"] = cat_df["cost_bdt"].apply(from_bdt)
 
         fig5 = px.pie(
             cat_df,
             names="category",
             values="cost",
-            title=f"OPEX Mix by Category ({sym})"
+            title=f"OPEX Mix by Category ({sym})",
+            color_discrete_sequence=palette,
         )
-        fig5.update_layout(height=380)
+        fig5.update_layout(height=380, paper_bgcolor=chart_bg, font_color="#e6edf3")
         st.plotly_chart(fig5, use_container_width=True)
     else:
         st.info("No OPEX linked to this campaign yet.")
