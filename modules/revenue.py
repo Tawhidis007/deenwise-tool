@@ -119,11 +119,19 @@ def build_campaign_forecast(
     end_date: date,
     distribution_mode: str = "Uniform",
     custom_month_weights: Optional[Dict[str, float]] = None,
+    per_product_month_weights: Optional[Dict[str, Dict[str, float]]] = None,
     size_breakdown: Optional[Dict[str, Dict[str, float]]] = None
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 
     months = month_range(start_date, end_date)
-    weights = build_distribution_weights(months, mode=distribution_mode, custom_weights=custom_month_weights)
+
+    # Base campaign-level weights (used when no per-product override)
+    base_weights = build_distribution_weights(
+        months,
+        mode=distribution_mode,
+        custom_weights=custom_month_weights
+    )
+
 
     monthly_rows = []
     size_rows = []
@@ -135,7 +143,25 @@ def build_campaign_forecast(
             continue
 
         p = prod_map[pid]
-        month_qtys = distribute_quantity(total_qty, weights)
+
+        # Decide weights for THIS product
+        if (
+            distribution_mode == "Custom"
+            and per_product_month_weights
+            and pid in per_product_month_weights
+        ):
+            this_custom = per_product_month_weights.get(pid, {})
+            weights_for_pid = build_distribution_weights(
+                months,
+                mode="Custom",
+                custom_weights=this_custom
+            )
+        else:
+            # Uniform / Front / Back, or no per-product override
+            weights_for_pid = base_weights
+
+        month_qtys = distribute_quantity(total_qty, weights_for_pid)
+
 
         if size_breakdown and pid in size_breakdown:
             sdict = size_breakdown[pid]

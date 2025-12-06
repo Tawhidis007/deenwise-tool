@@ -17,7 +17,8 @@ from modules.revenue import (
 from modules.campaign_db import (
     fetch_campaign_products,
     fetch_month_weights,
-    fetch_size_breakdown
+    fetch_size_breakdown,
+    fetch_product_month_weights,   # NEW
 )
 
 # NOTE: module_3 opex linkage table name may vary.
@@ -212,8 +213,15 @@ def build_scenario_forecast(
 
     # pull base campaign inputs
     base_quantities, _ = fetch_campaign_products(campaign_id)
+
+    # Legacy campaign-level weights (rows where product_id IS NULL)
     base_weights = fetch_month_weights(campaign_id)
+
+    # NEW: per-product month weights (rows where product_id IS NOT NULL)
+    base_product_weights = fetch_product_month_weights(campaign_id)
+
     base_sizes = fetch_size_breakdown(campaign_id)
+
 
     # apply overrides
     sp_map = apply_product_overrides(products, scenario_product_overrides)
@@ -234,7 +242,49 @@ def build_scenario_forecast(
             continue
 
         p = sp_map[pid]
-        month_qtys = distribute_quantity(total_qty, weights)
+
+        # -------------------------------
+        # Decide weights for THIS product
+        # -------------------------------
+        if distribution_mode == "Custom":
+            if custom_weights_override:
+                # Scenario-level override: same pattern for all products
+                weights_for_pid = build_distribution_weights(
+                    months,
+                    mode="Custom",
+                    custom_weights=custom_weights_override
+                )
+            elif base_product_weights and pid in base_product_weights:
+                # NEW: per-product weights from campaign_month_weights
+                this_custom = base_product_weights.get(pid, {})
+                weights_for_pid = build_distribution_weights(
+                    months,
+                    mode="Custom",
+                    custom_weights=this_custom
+                )
+            elif base_weights:
+                # Fallback: legacy campaign-level weights if present
+                weights_for_pid = build_distribution_weights(
+                    months,
+                    mode="Custom",
+                    custom_weights=base_weights
+                )
+            else:
+                # Fully fallback → equal distribution
+                weights_for_pid = build_distribution_weights(
+                    months,
+                    mode="Custom",
+                    custom_weights={m: 1.0 for m in months}
+                )
+        else:
+            # Uniform / Front-loaded / Back-loaded → same weights for everyone
+            weights_for_pid = build_distribution_weights(
+                months,
+                mode=distribution_mode
+            )
+
+        month_qtys = distribute_quantity(total_qty, weights_for_pid)
+
 
         # size breakdown (inherits base unless overridden by qty_override only)
         if base_sizes and pid in base_sizes:

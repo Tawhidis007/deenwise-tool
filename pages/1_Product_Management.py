@@ -10,6 +10,81 @@ from modules.products import (
 )
 
 st.set_page_config(page_title="Product Management", page_icon="🧵", layout="wide")
+# =========================================
+# Custom CSS for modern / techy design
+# =========================================
+st.markdown("""
+    <style>
+    /* ---- GLOBAL ---- */
+    .main {
+        background: #0d1117 !important;
+        color: #e6edf3 !important;
+    }
+
+    /* ---- HEADERS ---- */
+    h1, h2, h3, h4 {
+    color: #f2d98d !important;  /* Updated gold color */
+    letter-spacing: -0.5px;
+    font-weight: 700 !important;
+}
+
+    /* ---- SUBTLE SHADOW CARDS ---- */
+    .stContainer {
+        background: rgba(255,255,255,0.05) !important;
+        padding: 20px !important;
+        border-radius: 12px !important;
+        box-shadow: 0 0 25px rgba(0,0,0,0.2);
+        backdrop-filter: blur(12px);
+    }
+
+    /* ---- DATAFRAME ---- */
+    .stDataFrame {
+        border-radius: 10px !important;
+        overflow: hidden !important;
+        background: #161B22 !important;
+    }
+
+    /* ---- METRICS ---- */
+    div[data-testid="stMetricValue"] {
+        font-size: 28px !important;
+        color: #58a6ff !important;
+    }
+
+    /* ---- BUTTONS ---- */
+    button[kind="primary"] {
+        background: linear-gradient(90deg, #238636, #2ea043) !important;
+        color: white !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+    }
+
+    button {
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+    }
+
+    /* ---- SELECTBOX / INPUT ---- */
+    .stSelectbox, .stNumberInput, .stTextInput, .stTextArea {
+        background: rgba(255,255,255,0.06) !important;
+        border-radius: 10px !important;
+    }
+            /* ---- BETTER TABLE DESIGN ---- */
+.dataframe > div {
+    background-color: #161b22 !important;
+    border-radius: 10px !important;
+}
+
+thead tr th {
+    background-color: #1f2937 !important;
+    color: #58a6ff !important;
+    font-weight: 600 !important;
+}
+
+tbody tr td {
+    color: #e6edf3 !important;
+}
+    </style>
+""", unsafe_allow_html=True)
 
 st.title("Product Management (Module 1)")
 st.caption("Add, edit, and remove DeenWise products. All unit costs and margins update live. Products are persisted in Supabase.")
@@ -117,19 +192,42 @@ with tab1:
                 df[c] = df[c].apply(from_bdt)
 
         sym = currency_symbol()
-
+        # NEW: Drop technical fields
+        drop_cols = ["id", "created_at", "updated_at"]
+        df = df.drop(columns=[c for c in drop_cols if c in df.columns])
         # Rename visible columns with currency symbol
         df = df.rename(columns={
-            "price_bdt": f"price ({sym})",
-            "manufacturing_cost_bdt": f"manufacturing_cost ({sym})",
-            "packaging_cost_bdt": f"packaging_cost ({sym})",
-            "shipping_cost_bdt": f"shipping_cost ({sym})",
-            "marketing_cost_bdt": f"marketing_cost ({sym})",
-            "effective_price": f"effective_price ({sym})",
-            "total_unit_cost": f"total_unit_cost ({sym})",
-            "unit_gross_profit": f"unit_gross_profit ({sym})",
-            "unit_net_profit": f"unit_net_profit ({sym})"
+            # ID & code
+            "id": "ID",
+            "product_code": "Product Code",
+
+            # Text fields
+            "name": "Product Name",
+            "category": "Category",
+            "notes": "Notes",
+
+            # Costs & prices with currency symbol
+            "price_bdt": f"Price ({sym})",
+            "manufacturing_cost_bdt": f"Manufacturing Cost ({sym})",
+            "packaging_cost_bdt": f"Packaging Cost ({sym})",
+            "shipping_cost_bdt": f"Shipping Cost ({sym})",
+            "marketing_cost_bdt": f"Marketing Cost ({sym})",
+
+            # Profit & cost calculations
+            "effective_price": f"Effective Price ({sym})",
+            "total_unit_cost": f"Total Unit Cost ({sym})",
+            "unit_gross_profit": f"Gross Profit / Unit ({sym})",
+            "unit_net_profit": f"Net Profit / Unit ({sym})",
+
+            # Percentage fields
+            "return_rate_%": "Return Rate (%)",
+            "discount_rate_%": "Discount Rate (%)",
+            "net_margin_%": "Net Margin (%)",
+
+            # Flags
+            "vat_included": "VAT Included?"
         })
+
 
         st.dataframe(df, use_container_width=True, hide_index=True)
 
@@ -139,25 +237,41 @@ with tab1:
         with c1:
             fig = px.bar(
                 df,
-                x="name",
-                y=f"unit_net_profit ({sym})",
-                color="category",
+                x="Product Name",
+                y=f"Net Profit / Unit ({sym})",
+                color="Category",
                 title=f"Unit Net Profit by Product ({sym})",
                 text_auto=".2f"
             )
-            fig.update_layout(height=420, yaxis_title=sym)
+            fig.update_layout(
+                height=420,
+                yaxis_title=sym,
+                plot_bgcolor="#0d1117",
+                paper_bgcolor="#0d1117",
+                font_color="#e6edf3",
+                legend=dict(font=dict(color="#e6edf3"))
+            )
+
             st.plotly_chart(fig, use_container_width=True)
 
         with c2:
             fig2 = px.bar(
                 df,
-                x="name",
-                y="net_margin_%",
-                color="category",
+                x="Product Name",
+                y="Net Margin (%)",
+                color="Category",
                 title="Net Margin % by Product",
                 text_auto=".1f"
             )
-            fig2.update_layout(height=420, yaxis_title="%")
+            fig2.update_layout(
+                height=420,
+                yaxis_title=sym,
+                plot_bgcolor="#0d1117",
+                paper_bgcolor="#0d1117",
+                font_color="#e6edf3",
+                legend=dict(font=dict(color="#e6edf3"))
+            )
+
             st.plotly_chart(fig2, use_container_width=True)
 
     st.divider()

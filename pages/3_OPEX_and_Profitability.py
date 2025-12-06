@@ -11,7 +11,8 @@ from modules.campaign_db import (
     get_latest_campaign_or_create_default,
     fetch_campaign_products,
     fetch_month_weights,
-    fetch_size_breakdown
+    fetch_size_breakdown,
+    fetch_product_month_weights,
 )
 
 from modules.opex_db import (
@@ -86,9 +87,11 @@ st.divider()
 products = load_products()
 quantities, _ = fetch_campaign_products(selected_campaign_id)
 
-db_weights = fetch_month_weights(selected_campaign_id)
-custom_month_weights = db_weights if distribution_mode == "Custom" else None
+db_product_weights = fetch_product_month_weights(selected_campaign_id)
 
+# Legacy campaign-level weights for old mode (we keep for compatibility)
+db_weights = fetch_month_weights(selected_campaign_id)
+custom_month_weights = None  # Module 3 should not use legacy weights for forecast
 db_sizes = fetch_size_breakdown(selected_campaign_id)
 
 monthly_df_bdt, product_summary_df_bdt, size_df_bdt = build_campaign_forecast(
@@ -97,9 +100,11 @@ monthly_df_bdt, product_summary_df_bdt, size_df_bdt = build_campaign_forecast(
     start_date=start_date,
     end_date=end_date,
     distribution_mode=distribution_mode,
-    custom_month_weights=custom_month_weights,
+    custom_month_weights=None,  # legacy values disabled
+    per_product_month_weights=db_product_weights if distribution_mode == "Custom" else None,
     size_breakdown=db_sizes if db_sizes else None
 )
+
 
 revenue_month_table = (
     monthly_df_bdt.groupby(["month", "month_nice"], as_index=False)

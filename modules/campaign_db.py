@@ -114,6 +114,10 @@ def save_campaign_products(campaign_id: str, quantities: Dict[str, float]) -> No
 # ============================================================
 
 def fetch_month_weights(campaign_id: str) -> Dict[str, float]:
+    """
+    Legacy campaign-level month weights (rows where product_id is NULL).
+    Still used for reporting / backwards compatibility.
+    """
     supabase = get_supabase()
     resp = (
         supabase.table("campaign_month_weights")
@@ -122,20 +126,108 @@ def fetch_month_weights(campaign_id: str) -> Dict[str, float]:
         .execute()
     )
     rows = resp.data or []
+
+    # Only keep rows without product_id → campaign-level weights
+    rows = [r for r in rows if not r.get("product_id")]
+
     return {r["month_label"]: float(r.get("weight", 1.0)) for r in rows}
 
 
+
 def save_month_weights(campaign_id: str, weights: Dict[str, float]) -> None:
+    """
+    Legacy campaign-level month weights (product_id is NULL).
+    """
     supabase = get_supabase()
-    supabase.table("campaign_month_weights").delete().eq("campaign_id", campaign_id).execute()
+
+    # Delete only legacy rows (no product_id)
+    resp = (
+        supabase.table("campaign_month_weights")
+        .select("id, product_id")
+        .eq("campaign_id", campaign_id)
+        .execute()
+    )
+    rows = resp.data or []
+    legacy_ids = [r["id"] for r in rows if not r.get("product_id")]
+
+    if legacy_ids:
+        supabase.table("campaign_month_weights").delete().in_("id", legacy_ids).execute()
 
     payload = [
-        {"campaign_id": campaign_id, "month_label": m, "weight": float(w)}
+        {
+            "campaign_id": campaign_id,
+            "month_label": m,
+            "weight": float(w),
+            # product_id omitted → NULL
+        }
         for m, w in weights.items()
         if float(w) >= 0
     ]
     if payload:
         supabase.table("campaign_month_weights").insert(payload).execute()
+
+# ============================================================
+# Per-product month weights (NEW, same table, with product_id)
+# ============================================================
+
+def fetch_product_month_weights(campaign_id: str) -> Dict[str, Dict[str, float]]:
+    """
+    Returns:
+        {product_id: {month_label: weight, ...}, ...}
+    Only rows where product_id IS NOT NULL.
+    """
+    supabase = get_supabase()
+    resp = (
+        supabase.table("campaign_month_weights")
+        .select("*")
+        .eq("campaign_id", campaign_id)
+        .execute()
+    )
+    rows = resp.data or []
+
+    out: Dict[str, Dict[str, float]] = {}
+    for r in rows:
+        pid = r.get("product_id")
+        if not pid:
+            continue  # skip campaign-level rows
+        out.setdefault(pid, {})
+        out[pid][r["month_label"]] = float(r.get("weight", 0.0) or 0.0)
+
+    return out
+
+
+def save_product_month_weights(
+    campaign_id: str,
+    weights_by_product: Dict[str, Dict[str, float]]
+) -> None:
+    """
+    weights_by_product:
+        {product_id: {month_label: weight, ...}, ...}
+    All values are interpreted as 'weights' (we'll treat them as percentages).
+    """
+    supabase = get_supabase()
+
+    for pid, month_dict in weights_by_product.items():
+        # Delete existing rows for this campaign + product
+        supabase.table("campaign_month_weights") \
+            .delete() \
+            .eq("campaign_id", campaign_id) \
+            .eq("product_id", pid) \
+            .execute()
+
+        payload = [
+            {
+                "campaign_id": campaign_id,
+                "product_id": pid,
+                "month_label": m,
+                "weight": float(w),
+            }
+            for m, w in month_dict.items()
+            if float(w) >= 0
+        ]
+
+        if payload:
+            supabase.table("campaign_month_weights").insert(payload).execute()
 
 
 # ============================================================

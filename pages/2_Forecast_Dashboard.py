@@ -21,6 +21,8 @@ from modules.campaign_db import (
     save_campaign_products,
     fetch_month_weights,
     save_month_weights,
+    fetch_product_month_weights,
+    save_product_month_weights,
     fetch_size_breakdown,
     save_size_breakdown
 )
@@ -48,6 +50,44 @@ def from_bdt(amount_bdt: float) -> float:
 # Page Setup
 # ============================================
 st.set_page_config(page_title="Forecast Dashboard", page_icon="📊", layout="wide")
+# =========================================
+# Custom CSS for consistent gold theme
+# =========================================
+st.markdown("""
+    <style>
+    /* GLOBAL BACKGROUND */
+    .main {
+        background: #0d1117 !important;
+        color: #e6edf3 !important;
+    }
+
+    /* HEADERS (H1–H4) */
+    h1, h2, h3, h4 {
+        color: #f2d98d !important;
+        letter-spacing: -0.5px;
+        font-weight: 700 !important;
+    }
+
+    /* Plotly Title Styling */
+    .js-plotly-plot .plotly-title {
+        fill: #f2d98d !important;
+    }
+
+    /* Axis + tick labels */
+    .js-plotly-plot .xtick text,
+    .js-plotly-plot .ytick text {
+        fill: #e6edf3 !important;
+    }
+
+    /* Legend text */
+    .js-plotly-plot .legend text {
+        fill: #e6edf3 !important;
+    }
+
+    </style>
+""", unsafe_allow_html=True)
+
+
 st.title("Forecast Dashboard (Module 2)")
 st.caption("Plan campaign quantities by product, distribute across months, and see full revenue forecast — persistent via Supabase.")
 
@@ -115,6 +155,8 @@ distribution_mode_db = curr_campaign.get("distribution_mode", "Uniform")
 db_quantities, _ = fetch_campaign_products(selected_campaign_id)
 db_weights = fetch_month_weights(selected_campaign_id)
 db_sizes = fetch_size_breakdown(selected_campaign_id)
+db_product_weights = fetch_product_month_weights(selected_campaign_id)
+
 
 # -----------------------------
 # Sidebar / Campaign Setup
@@ -152,6 +194,9 @@ with st.sidebar:
 # -----------------------------
 # Main Tabs
 # -----------------------------
+product_month_weights = {}
+custom_month_weights = None  # we won't use it now for per-product, but keep var for compatibility
+
 tab1, tab2, tab3 = st.tabs(["🧮 Quantities", "📈 Forecast Output", "🧾 Size Breakdown"])
 
 # =====================================================================
@@ -221,34 +266,70 @@ with tab1:
                             key=f"size_{selected_campaign_id}_{pid}_{s}"
                         )
                 size_breakdown[pid] = sb
+            
+            # --------------------------------------------
+            # Per-product custom monthly percentages
+            # --------------------------------------------
+            if distribution_mode == "Custom":
+                st.markdown("#### Custom Monthly % for this Product")
+
+                existing = db_product_weights.get(pid, {})  # {month_label: weight}
+                this_weights = {}
+                used_pct = 0.0
+
+                for i, m in enumerate(months):
+                    nice = month_label_to_nice(m)
+
+                    # Last month auto-fills remaining %
+                    if i == len(months) - 1:
+                        remaining = max(0.0, 100.0 - used_pct)
+                        this_weights[m] = remaining
+                        units = qty_total * remaining / 100.0
+                        st.markdown(
+                            f"**{nice}: {remaining:.1f}% → ≈ {units:.1f} units (auto)**"
+                        )
+                    else:
+                        prefill = float(existing.get(m, 0.0))
+                        pct = st.number_input(
+                            f"{nice} (%) for {pname}",
+                            min_value=0.0,
+                            max_value=100.0,
+                            value=prefill,
+                            step=1.0,
+                            key=f"pct_{selected_campaign_id}_{pid}_{m}"
+                        )
+                        pct = float(pct)
+                        this_weights[m] = pct
+                        used_pct += pct
+
+                        units = qty_total * pct / 100.0
+                        st.caption(f"≈ {units:.1f} units")
+
+                product_month_weights[pid] = this_weights
+
+                total_pct = sum(this_weights.values())
+                if abs(total_pct - 100.0) > 0.01:
+                    st.warning(
+                        f"Total percentage for {pname} = {total_pct:.1f}%. "
+                        "The last month auto-adjusts, but try to keep the sum near 100%."
+                    )
+
+
+                
 
     save_campaign_products(selected_campaign_id, quantities)
 
+    # We keep custom_month_weights for backwards compatibility,
+    # but per-product weights are the primary thing for Custom mode.
     custom_month_weights = None
-    if distribution_mode == "Custom":
-        st.markdown("### Custom Monthly Weights")
-        rows = []
-        for m in months:
-            nice = month_label_to_nice(m)
-            prefill_w = float(db_weights.get(m, 1.0))
 
-            w = st.number_input(
-                f"Weight for {nice}",
-                min_value=0.0,
-                value=prefill_w,
-                step=0.1,
-                key=f"w_{selected_campaign_id}_{m}"
-            )
-            rows.append({"month": m, "month_nice": nice, "weight": w})
-
-        df_w = pd.DataFrame(rows)
-        custom_month_weights = {r["month"]: r["weight"] for r in rows}
-
-        st.dataframe(df_w, use_container_width=True, hide_index=True)
-        save_month_weights(selected_campaign_id, custom_month_weights)
+    if distribution_mode == "Custom" and product_month_weights:
+        # Save per-product month percentages (as weights)
+        save_product_month_weights(selected_campaign_id, product_month_weights)
     else:
-        if db_weights:
-            save_month_weights(selected_campaign_id, {})
+        # For non-Custom modes, you can optionally clear legacy campaign-level weights
+        # or leave them alone. We'll leave them as-is here.
+        pass
 
     if enable_size_breakdown:
         save_size_breakdown(selected_campaign_id, size_breakdown)
@@ -269,6 +350,7 @@ with tab2:
         end_date=end_date_ui,
         distribution_mode=distribution_mode,
         custom_month_weights=custom_month_weights,
+        per_product_month_weights=product_month_weights if distribution_mode == "Custom" else None,
         size_breakdown=size_breakdown if enable_size_breakdown else None
     )
 
@@ -309,15 +391,54 @@ with tab2:
     st.dataframe(month_table, use_container_width=True, hide_index=True)
 
     colA, colB = st.columns(2)
+    # ========================================
+    # FIXED LINE CHART (DARK THEME MATCHING M1)
+    # ========================================
     with colA:
-        fig1 = px.line(month_table, x="month_nice", y="effective_revenue", markers=True,
-                       title=f"Effective Revenue Over Campaign ({sym})")
+        fig1 = px.line(
+            month_table,
+            x="month_nice",
+            y="effective_revenue",
+            markers=True,
+            title=f"Effective Revenue Over Campaign ({sym})"
+        )
+
+        fig1.update_layout(
+            height=420,
+            plot_bgcolor="#0d1117",
+            paper_bgcolor="#0d1117",
+            font_color="#e6edf3",
+            xaxis_title="",
+            yaxis_title=f"{sym}",
+            legend=dict(font=dict(color="#e6edf3"))
+        )
+
         st.plotly_chart(fig1, use_container_width=True)
 
+    # ========================================
+    # FIXED BAR CHART (DARK THEME MATCHING M1)
+    # ========================================
     with colB:
         if not product_summary_df_bdt.empty:
-            fig2 = px.bar(ps, x="product_name", y="effective_revenue", color="category",
-                          title=f"Effective Revenue by Product ({sym})", text_auto=".0f")
+            fig2 = px.bar(
+                ps,
+                x="product_name",
+                y="effective_revenue",
+                color="category",
+                title=f"Effective Revenue by Product ({sym})",
+                text_auto=".0f"
+            )
+
+            fig2.update_layout(
+                height=420,
+                plot_bgcolor="#0d1117",
+                paper_bgcolor="#0d1117",
+                font_color="#e6edf3",
+                xaxis_title="",
+                yaxis_title=f"{sym}",
+                legend=dict(font=dict(color="#e6edf3"))
+            )
+
             st.plotly_chart(fig2, use_container_width=True)
 
     st.session_state["monthly_forecast_df"] = mt
